@@ -1,8 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Text.Json.Serialization;
 using ToDoListApp.DAL.Entity.Identity;
-using ToDoListApp.Enum;
+using ToDoListApp.Enums;
 
 namespace ToDoListApp.DAL.Entity
 {
@@ -15,15 +14,18 @@ namespace ToDoListApp.DAL.Entity
         public string? Title { get; set; }
 
         public string? Description { get; set; }
-
+       
         public DateTime Deadline { get; set; }
-
+        
         public Priority Priority { get; set; }
 
+        public Enums.TaskStatus StatusTask { get; set; }
 
-        [ForeignKey("User")]
+        public DateTime AcceptanceDate { get; set; }
+
+        [ForeignKey(nameof(Users))]
         public Guid UserId { get; set; }
-        //[JsonIgnore]
-        public User Users { get; set; } = new User();
+
+        public User Users { get; set; }
     }
 }

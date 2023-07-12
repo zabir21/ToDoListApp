@@ -1,7 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using ToDoListApp.BLL.Services;
+using ToDoListApp.BLL.Exceptions;
+using ToDoListApp.BLL.Models.Dto;
+using ToDoListApp.BLL.Services.Interfaces;
 using ToDoListApp.Contracts.Requests;
-using ToDoListApp.Enum;
+using ToDoListApp.Contracts.Responses;
+using ToDoListApp.Contracts.Responses.Base;
+using ToDoListApp.Enums;
 
 namespace ToDoListApp.Controllers
 {
@@ -10,57 +14,64 @@ namespace ToDoListApp.Controllers
     public class AuthenticationController : ControllerBase
     {
         private readonly IAuthService _authService;
-        
-        private readonly ILogger<AuthenticationController> _logger;
 
-        public AuthenticationController(IAuthService authService, ILogger<AuthenticationController> logger)
+        public AuthenticationController(IAuthService authService)
         {
             _authService = authService;
-            _logger = logger;
         }
 
         [HttpPost]
         [Route("registeration")]
-        public async Task<IActionResult> Register(RegistrationRequestModel model)
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<ApiResult<UserDto>>> Register(RegistrationRequestModel model)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ApiResult.BadRequest("Failed"));
+
             try
             {
-                if (!ModelState.IsValid)
-                    return BadRequest("Invalid payload");
-                var (status, message) = await _authService.Registeration(model, Roles.User);
+                var result = await _authService.Registeration(model, Roles.User);
 
-                if (status == 0)
-                {
-                    return BadRequest(message);
-                }
-                return CreatedAtAction(nameof(Register), model);
-
+                return Ok(ApiResult<UserDto>.Succces(result));
             }
-            catch (Exception ex)
+            catch (UserNameAlreadyExistsException)
             {
-                _logger.LogError(ex.Message);
-                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+                return BadRequest(ApiResult.BadRequest("User name exists"));
+            }
+            catch (EmailAlreadyException)
+            {
+                return BadRequest(ApiResult.BadRequest("User with this email already exists"));
+            }
+            catch (UserNotCreatedException)
+            {
+                return BadRequest(ApiResult.BadRequest("Can't create user"));
             }
         }
 
         [HttpPost]
         [Route("login")]
-        public async Task<IActionResult> Login(LoginRequestModel model)
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<ApiResult<TokenResponseModel>>> Login(LoginRequestModel model)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ApiResult.BadRequest("Failed"));
+
             try
             {
-                if (!ModelState.IsValid)
-                    return BadRequest("Invalid payload");
                 var result = await _authService.Login(model);
-                if (result.StatusCode == 0)
-                    return BadRequest(result.StatusMessage);
-                return Ok(result);
+
+                return Ok(ApiResult<TokenResponseModel>.Succces(result));
             }
-            catch (Exception ex)
+            catch (UserNotFoundException)
             {
-                _logger.LogError(ex.Message);
-                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+                return BadRequest(ApiResult.BadRequest("User not found"));
             }
-        }       
+            catch (InvalidPasswordException)
+            {
+                return BadRequest(ApiResult.BadRequest("Invalid password"));
+            }         
+        }
     }
 }

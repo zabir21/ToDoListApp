@@ -1,10 +1,15 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using ToDoListApp.BLL.Exceptions;
+using ToDoListApp.BLL.Models.Dto;
 using ToDoListApp.BLL.Services;
+using ToDoListApp.BLL.Services.Interfaces;
 using ToDoListApp.Contracts.Requests;
+using ToDoListApp.Contracts.Responses;
+using ToDoListApp.Contracts.Responses.Base;
 using ToDoListApp.DAL.Entity.Identity;
-using ToDoListApp.Enum;
+using ToDoListApp.Enums;
 
 namespace ToDoListApp.Controllers
 {
@@ -13,68 +18,69 @@ namespace ToDoListApp.Controllers
     public class RefreshTokensController : ControllerBase
     {
         private readonly IAuthService _authService;
-        private readonly ILogger<AuthenticationController> _logger;
-        private readonly IConfiguration _configuration;
         private readonly UserManager<User> _userManager;
 
-        public RefreshTokensController(IAuthService authService, ILogger<AuthenticationController> logger, IConfiguration configuration, UserManager<User> userManager)
+        public RefreshTokensController(IAuthService authService, UserManager<User> userManager)
         {
             _authService = authService;
-            _logger = logger;
-            _configuration = configuration;
             _userManager = userManager;
         }
 
         [HttpPost]
         [Route("refresh")]
-        public async Task<IActionResult> RefreshToken(GetRefreshTokenRequestModel model)
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<ApiResult<TokenResponseModel>>> RefreshToken(GetRefreshTokenRequestModel model)
         {
+            if (model is null)
+            {
+                return BadRequest(ApiResult.BadRequest("Invalid client request"));
+            }
+
             try
             {
-                if (model is null)
-                {
-                    return BadRequest("Invalid client request");
-                }
-
                 var result = await _authService.GetRefreshToken(model);
-                if (result.StatusCode == 0)
-                    return BadRequest(result.StatusMessage);
 
-                return Ok(result);
+                return Ok(ApiResult<TokenResponseModel>.Succces(result));
             }
-            catch (Exception ex)
+            catch (AccessTokenInvalidException)
             {
-                _logger.LogError(ex.Message);
-                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+                return BadRequest(ApiResult.BadRequest("Invalid access token or refresh token"));
+            }
+            catch(InvalidPasswordException)
+            {
+                return BadRequest(ApiResult.BadRequest("Invalid password"));
             }
         }
 
         [Authorize(Roles = nameof(Roles.Admin))]
         [HttpPost]
         [Route("revoke/{username}")]
-        public async Task<IActionResult> Revoke(string username)
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<ApiResult>> Revoke(string username)
         {
-            var user = await _userManager.FindByNameAsync(username);
-            if (user == null) return BadRequest("Invalid user name");
+            try
+            {
+                await _authService.DeleteToken(username);
 
-            user.RefreshToken = null;
-            await _userManager.UpdateAsync(user);
-
-            return Ok("Success");
+                return Ok(ApiResult.Succces());
+            }
+            catch (InvalidUserNameException)
+            {
+                return BadRequest(ApiResult.BadRequest("Invalid user name"));
+            }
         }
 
         [Authorize(Roles = nameof(Roles.Admin))]
         [HttpPost]
         [Route("revoke-all")]
-        public async Task<IActionResult> RevokeAll()
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<ActionResult<ApiResult>> RevokeAll()
         {
-            var users = _userManager.Users.ToList();
-            foreach (var user in users)
-            {
-                user.RefreshToken = null;
-                await _userManager.UpdateAsync(user);
-            }
-            return Ok("Success");
+            await _authService.DeleteTokenAll();
+
+            return Ok(ApiResult.Succces());
         }
     }
 }
