@@ -12,7 +12,7 @@ using ToDoList.DAL.DbContext;
 namespace ToDoListApp.Migrations
 {
     [DbContext(typeof(UsersDbContext))]
-    [Migration("20230711093926_Initial")]
+    [Migration("20230716123924_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -205,6 +205,9 @@ namespace ToDoListApp.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime>("AcceptanceDate")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTime>("Deadline")
                         .HasColumnType("timestamp with time zone");
 
@@ -212,6 +215,9 @@ namespace ToDoListApp.Migrations
                         .HasColumnType("text");
 
                     b.Property<int>("Priority")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("StatusTask")
                         .HasColumnType("integer");
 
                     b.Property<string>("Title")

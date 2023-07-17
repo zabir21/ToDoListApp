@@ -1,7 +1,8 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using ToDoListApp.Enum;
+using ToDoListApp.DAL.Entity.Identity;
+using ToDoListApp.Enums;
 
-namespace ToDoListApp.DAL.Entity.Identity
+namespace ToDoListApp.DAL
 {
     public class DataSeeder
     {
@@ -36,7 +37,7 @@ namespace ToDoListApp.DAL.Entity.Identity
             {
                 adminUser = new User
                 {
-                    UserName = Roles.Admin.ToString()                   
+                    UserName = Roles.Admin.ToString()
                 };
 
                 var result = await _userManager.CreateAsync(adminUser, "Admin123$");

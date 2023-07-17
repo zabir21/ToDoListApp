@@ -1,7 +1,8 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using ToDoListApp.Contracts.Requests;
+using ToDoListApp.BLL.Exceptions;
+using ToDoListApp.BLL.Services.Interfaces;
 using ToDoListApp.DAL.Entity.Identity;
-using ToDoListApp.Enum;
+using ToDoListApp.Enums;
 
 namespace ToDoListApp.BLL.Services
 {
@@ -13,77 +14,37 @@ namespace ToDoListApp.BLL.Services
         {
             this.userManager = userManager;
             this.roleManager = roleManager;
-        }      
-
-        public async Task<(int, string)> CreateRole(UserRoles roles)
-        {
-            // Проверка, существует ли роль с таким именем
-            var existingRole = await roleManager.FindByNameAsync(roles.Name);
-            if (existingRole != null)
-            {
-                return (0, "Роль уже существует");
-            }
-
-            // Создание роли в базе данных
-            var result = await roleManager.CreateAsync(new UserRoles { Name = roles.Name });
-
-            if (result.Succeeded)
-            {
-                return (1, "Роль успешно создана");
-            }
-
-            return (1 , string.Join(", ", result.Errors));
         }
 
-        public async Task<AddRolesRequestModel> AddRoleToUser(Guid id, Roles roles)
+        public async Task AddRoleToUser(Guid userId, Roles role)
         {
-            AddRolesRequestModel model = new ();
-            var user = await userManager.FindByIdAsync(id.ToString());
+            var user = await userManager.FindByIdAsync(userId.ToString());
 
             if (user == null)
             {
-                model.Id= id;
-                model.Message = "Пользователь с ID не найден";
-                model.Status = 0;
-
-                return model;               
+                throw new UserNotFoundException();
             }
 
-            var roleExists = await roleManager.RoleExistsAsync(roles.ToString());
+            var roleExists = await roleManager.RoleExistsAsync(role.ToString());
 
             if (!roleExists)
             {
-                model.Role = roles.ToString();
-                model.Message = "Роль не существует";
-                model.Status = 0;
-
-                return model;
+                throw new RoleNotExistException();
             }
 
             var currentRoles = await userManager.GetRolesAsync(user);
 
-            if (currentRoles.Contains(roles.ToString()))
+            if (currentRoles.Contains(role.ToString()))
             {
-                model.Role = roles.ToString();
-                model.Message = "У пользователя уже имеется роль";
-                model.Status = 0;
-
-                return model;
+                return;
             }
 
-            var result = await userManager.AddToRoleAsync(user, roles.ToString());
+            var result = await userManager.AddToRoleAsync(user, role.ToString());
 
-            if (result.Succeeded)
+            if (!result.Succeeded)
             {
-                model.Id = id;
-                model.Role = roles.ToString();
-                model.Message = $"Пользователю с ID {id} успешно назначена роль {roles}";
-                model.Status = 1;
-
-                return model;
+                throw new RoleNotAddedToUserException($"Can't add role: {role} to user: {userId}");
             }
-
-            return model;
         }
     }
 }

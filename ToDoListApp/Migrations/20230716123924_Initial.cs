@@ -130,6 +130,8 @@ namespace ToDoListApp.Migrations
                     Description = table.Column<string>(type: "text", nullable: true),
                     Deadline = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Priority = table.Column<int>(type: "integer", nullable: false),
+                    StatusTask = table.Column<int>(type: "integer", nullable: false),
+                    AcceptanceDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UserId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>

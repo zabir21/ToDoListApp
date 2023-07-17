@@ -202,6 +202,9 @@ namespace ToDoListApp.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime>("AcceptanceDate")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTime>("Deadline")
                         .HasColumnType("timestamp with time zone");
 
@@ -209,6 +212,9 @@ namespace ToDoListApp.Migrations
                         .HasColumnType("text");
 
                     b.Property<int>("Priority")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("StatusTask")
                         .HasColumnType("integer");
 
                     b.Property<string>("Title")

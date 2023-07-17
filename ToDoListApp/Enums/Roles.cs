@@ -1,4 +1,4 @@
-﻿namespace ToDoListApp.Enum
+﻿namespace ToDoListApp.Enums
 {
     public enum Roles
     {

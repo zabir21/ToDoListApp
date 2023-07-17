@@ -1,16 +1,17 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Newtonsoft.Json;
+using System.ComponentModel.DataAnnotations;
 
-namespace ToDoListApp.Enum
+namespace ToDoListApp.Enums
 {
     public enum Priority
     {
         [Display(Name = "Простая")]
-        Easy = 1,
+        Easy = 0,
 
         [Display(Name = "Важная")]
-        Medium = 2,
+        Medium = 1,
 
         [Display(Name = "Критичная")]
-        Hard = 3
+        Hard = 2
     }
 }

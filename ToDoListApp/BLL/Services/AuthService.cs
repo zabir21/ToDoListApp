@@ -1,13 +1,17 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using ToDoListApp.BLL.Exceptions;
+using ToDoListApp.BLL.Models.Dto;
+using ToDoListApp.BLL.Services.Interfaces;
 using ToDoListApp.Contracts.Requests;
 using ToDoListApp.Contracts.Responses;
 using ToDoListApp.DAL.Entity.Identity;
-using ToDoListApp.Enum;
+using ToDoListApp.Enums;
 
 namespace ToDoListApp.BLL.Services
 {
@@ -23,11 +27,21 @@ namespace ToDoListApp.BLL.Services
             _configuration = configuration;
         }
 
-        public async Task<(int, string)> Registeration(RegistrationRequestModel model, Roles roles)
+        public async Task<UserDto> Registeration(RegistrationRequestModel model, Roles roles)
         {
             var userExists = await userManager.FindByNameAsync(model.Username);
+
             if (userExists != null)
-                return (0, "User already exists");
+            {
+                throw new UserNameAlreadyExistsException();
+            }
+
+            userExists = await userManager.FindByEmailAsync(model.Email);
+
+            if (userExists?.Email == model.Email)
+            {
+                throw new EmailAlreadyException();
+            }               
 
             User user = new()
             {
@@ -39,7 +53,7 @@ namespace ToDoListApp.BLL.Services
 
             if (!createUserResult.Succeeded)
             {
-                return (0, "User creation failed! Please check user details and try again."); 
+                throw new UserNotCreatedException();
             }
 
             if (!await roleManager.RoleExistsAsync(Roles.User.ToString()))
@@ -47,9 +61,13 @@ namespace ToDoListApp.BLL.Services
                 await roleManager.CreateAsync(new UserRoles { Name = roles.ToString() });
             }
 
-            await userManager.AddToRoleAsync(user, Roles.User.ToString());
+             await userManager.AddToRoleAsync(user, Roles.User.ToString());
 
-            return (1, "User created successfully!");
+            return new UserDto
+            {
+                Email = model.Email,
+                UserName = model.Username,
+            };
         }
 
         public async Task<TokenResponseModel> Login(LoginRequestModel model)
@@ -59,16 +77,18 @@ namespace ToDoListApp.BLL.Services
 
             if (user == null)
             {
-                _TokenViewModel.StatusCode = 0;
-                _TokenViewModel.StatusMessage = "Invalid username";
-                return _TokenViewModel;
+                //_TokenViewModel.StatusCode = 0;
+                //_TokenViewModel.StatusMessage = "Invalid username";
+                //return _TokenViewModel;
+                throw new UserNotFoundException();
             }
 
             if (!await userManager.CheckPasswordAsync(user, model.Password))
             {
-                _TokenViewModel.StatusCode = 0;
-                _TokenViewModel.StatusMessage = "Invalid password";
-                return _TokenViewModel;
+                //_TokenViewModel.StatusCode = 0;
+                //_TokenViewModel.StatusMessage = "Invalid password";
+                //return _TokenViewModel;
+                throw new InvalidPasswordException();
             }
 
             var userRoles = await userManager.GetRolesAsync(user);
@@ -84,12 +104,14 @@ namespace ToDoListApp.BLL.Services
             }
             _TokenViewModel.AccessToken = GenerateToken(authClaims);
             _TokenViewModel.RefreshToken = GenerateRefreshToken();
-            _TokenViewModel.StatusCode = 1;
-            _TokenViewModel.StatusMessage = "Success";
+            //_TokenViewModel.StatusCode = 1;
+            //_TokenViewModel.StatusMessage = "Success";
 
             var _RefreshTokenValidityInDays = Convert.ToInt64(_configuration["JWTKey:RefreshTokenValidityInDays"]);
             user.RefreshToken = _TokenViewModel.RefreshToken;
             user.RefreshTokenExpiryTime = DateTime.Now.AddDays(_RefreshTokenValidityInDays);
+
+
             await userManager.UpdateAsync(user);
 
             return _TokenViewModel;
@@ -104,9 +126,10 @@ namespace ToDoListApp.BLL.Services
 
             if (user == null || user.RefreshToken != model.RefreshToken || user.RefreshTokenExpiryTime <= DateTime.Now)
             {
-                _TokenViewModel.StatusCode = 0;
-                _TokenViewModel.StatusMessage = "Invalid access token or refresh token";
-                return _TokenViewModel;
+                //_TokenViewModel.StatusCode = 0;
+                //_TokenViewModel.StatusMessage = "Invalid access token or refresh token";
+                throw new AccessTokenInvalidException();
+                //return _TokenViewModel;
             }
 
             var authClaims = new List<Claim>
@@ -120,8 +143,8 @@ namespace ToDoListApp.BLL.Services
             user.RefreshToken = newRefreshToken;
             await userManager.UpdateAsync(user);
 
-            _TokenViewModel.StatusCode = 1;
-            _TokenViewModel.StatusMessage = "Success";
+            //_TokenViewModel.StatusCode = 1;
+            //_TokenViewModel.StatusMessage = "Success";
             _TokenViewModel.AccessToken = newAccessToken;
             _TokenViewModel.RefreshToken = newRefreshToken;
 
@@ -137,8 +160,8 @@ namespace ToDoListApp.BLL.Services
             {
                 Issuer = _configuration["JWTKey:ValidIssuer"],
                 Audience = _configuration["JWTKey:ValidAudience"],
-                //Expires = DateTime.UtcNow.AddHours(_TokenExpiryTimeInHour),
-                Expires = DateTime.Now.AddMinutes(1),
+                Expires = DateTime.UtcNow.AddHours(_TokenExpiryTimeInHour),
+                //Expires = DateTime.Now.AddMinutes(10),
                 SigningCredentials = new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256),
                 Subject = new ClaimsIdentity(claims)
             };
@@ -175,6 +198,26 @@ namespace ToDoListApp.BLL.Services
             return principal;
         }
 
-        
+        public async Task DeleteToken(string username)
+        {
+            var user = await userManager.FindByNameAsync(username);
+
+            if (user == null)
+            {
+                throw new InvalidUserNameException();
+            }
+
+            user.RefreshToken = null;
+            await userManager.UpdateAsync(user);
+        }
+        public async Task DeleteTokenAll()
+        {
+            var users = userManager.Users.ToList();
+            foreach (var user in users)
+            {
+                user.RefreshToken = null;
+                await userManager.UpdateAsync(user);
+            }
+        }
     }
 }
