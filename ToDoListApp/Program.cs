@@ -10,6 +10,9 @@ using ToDoList.DAL.DbContext;
 using Newtonsoft.Json.Converters;
 using ToDoListApp.BLL.Services.Interfaces;
 using ToDoListApp.DAL;
+using ToDoListApp.Validators;
+using FluentValidation;
+using ToDoListApp.Contracts.Requests;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,8 +22,10 @@ builder.Services.AddTransient<IUserService, UserService>();
 builder.Services.AddTransient<ITaskService, TaskService>();
 builder.Services.AddTransient<DataSeeder>();
 builder.Services.AddScoped<UserAccessManager>();
+builder.Services.AddScoped<IValidator<RegistrationRequestModel>, RegistrationRequestModelValidator>();
 
 builder.Services.AddControllers();
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(opt =>

@@ -68,6 +68,7 @@ namespace ToDoListApp.Controllers
             {
                 var taskDto = await _taskService.Update(new UpdateTaskModel
                 {
+                    Id = id,
                     StatusTask = request.StatusTask,
                     AcceptanceDate = request.AcceptanceDate
                 });
