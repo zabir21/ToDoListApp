@@ -30,6 +30,18 @@ namespace ToDoListApp.DAL
             }
         }
 
+        public async Task CreateUsers(List<User> users, Roles role)
+        {
+            foreach (var user in users)
+            {
+                var result = await _userManager.CreateAsync(user, "Admin123$");
+                if (result.Succeeded)
+                {
+                    await _userManager.AddToRoleAsync(user, role.ToString());
+                }
+            }
+        }
+
         private async Task SeedAdminUserAsync()
         {
             var adminUser = await _userManager.FindByNameAsync(Roles.Admin.ToString());
