@@ -11,7 +11,7 @@ namespace ToDoListApp.Controllers
 {
     [Route("api/auth")]
     [ApiController]
-    public class AuthenticationController : ControllerBase
+    public class AuthenticationController : BaseApiController
     {
         private readonly IAuthService _authService;
 
@@ -27,50 +27,50 @@ namespace ToDoListApp.Controllers
         public async Task<ActionResult<ApiResult<UserDto>>> Register(RegistrationRequestModel model)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ApiResult.BadRequest("Failed"));
+                return BadRequest("Failed");
 
             try
             {
                 var result = await _authService.Registeration(model, Roles.User);
 
-                return Ok(ApiResult<UserDto>.Succces(result));
+                return Ok(result);
             }
             catch (UserNameAlreadyExistsException)
             {
-                return BadRequest(ApiResult.BadRequest("User name exists"));
+                return BadRequest(ErrorCode.UserNameAlredyExist, "User name exists");
             }
             catch (EmailAlreadyException)
             {
-                return BadRequest(ApiResult.BadRequest("User with this email already exists"));
+                return BadRequest(ErrorCode.EmailAlreadyExist, "User with this email already exists");
             }
             catch (UserNotCreatedException)
             {
-                return BadRequest(ApiResult.BadRequest("Can't create user"));
+                return BadRequest(ErrorCode.UserNotCreated, "Can't create user");
             }
         }
 
-        [HttpPost]
-        [Route("login")]
+        [HttpPost("login")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<ApiResult<TokenResponseModel>>> Login(LoginRequestModel model)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ApiResult.BadRequest("Failed"));
+                return BadRequest("Failed");
 
             try
             {
                 var result = await _authService.Login(model);
 
-                return Ok(ApiResult<TokenResponseModel>.Succces(result));
+                return Ok(result);
             }
             catch (UserNotFoundException)
             {
-                return BadRequest(ApiResult.BadRequest("User not found"));
+                return BadRequest(ErrorCode.UserNotFound, "User not found");
             }
             catch (InvalidPasswordException)
             {
-                return BadRequest(ApiResult.BadRequest("Invalid password"));
+                return BadRequest(ErrorCode.InvalidPasword, "Invalid password");
             }         
         }
     }

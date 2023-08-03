@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -44,7 +43,7 @@ namespace ToDoListApp.BLL.Services
             }               
 
             User user = new()
-            {
+            {             
                 Email = model.Email,
                 UserName = model.Username
             };
@@ -65,6 +64,7 @@ namespace ToDoListApp.BLL.Services
 
             return new UserDto
             {
+                Id = user.Id,
                 Email = model.Email,
                 UserName = model.Username,
             };
@@ -77,17 +77,11 @@ namespace ToDoListApp.BLL.Services
 
             if (user == null)
             {
-                //_TokenViewModel.StatusCode = 0;
-                //_TokenViewModel.StatusMessage = "Invalid username";
-                //return _TokenViewModel;
                 throw new UserNotFoundException();
             }
 
             if (!await userManager.CheckPasswordAsync(user, model.Password))
             {
-                //_TokenViewModel.StatusCode = 0;
-                //_TokenViewModel.StatusMessage = "Invalid password";
-                //return _TokenViewModel;
                 throw new InvalidPasswordException();
             }
 
@@ -102,10 +96,9 @@ namespace ToDoListApp.BLL.Services
             {
                 authClaims.Add(new Claim(ClaimTypes.Role, userRole));
             }
+
             _TokenViewModel.AccessToken = GenerateToken(authClaims);
             _TokenViewModel.RefreshToken = GenerateRefreshToken();
-            //_TokenViewModel.StatusCode = 1;
-            //_TokenViewModel.StatusMessage = "Success";
 
             var _RefreshTokenValidityInDays = Convert.ToInt64(_configuration["JWTKey:RefreshTokenValidityInDays"]);
             user.RefreshToken = _TokenViewModel.RefreshToken;
@@ -126,10 +119,7 @@ namespace ToDoListApp.BLL.Services
 
             if (user == null || user.RefreshToken != model.RefreshToken || user.RefreshTokenExpiryTime <= DateTime.Now)
             {
-                //_TokenViewModel.StatusCode = 0;
-                //_TokenViewModel.StatusMessage = "Invalid access token or refresh token";
                 throw new AccessTokenInvalidException();
-                //return _TokenViewModel;
             }
 
             var authClaims = new List<Claim>
@@ -143,8 +133,6 @@ namespace ToDoListApp.BLL.Services
             user.RefreshToken = newRefreshToken;
             await userManager.UpdateAsync(user);
 
-            //_TokenViewModel.StatusCode = 1;
-            //_TokenViewModel.StatusMessage = "Success";
             _TokenViewModel.AccessToken = newAccessToken;
             _TokenViewModel.RefreshToken = newRefreshToken;
 
@@ -213,6 +201,7 @@ namespace ToDoListApp.BLL.Services
         public async Task DeleteTokenAll()
         {
             var users = userManager.Users.ToList();
+
             foreach (var user in users)
             {
                 user.RefreshToken = null;

@@ -6,14 +6,13 @@ using ToDoListApp.BLL.Services;
 using ToDoListApp.BLL.Services.Interfaces;
 using ToDoListApp.Contracts.Requests;
 using ToDoListApp.Contracts.Responses;
-using ToDoListApp.Contracts.Responses.Base;
 
 namespace ToDoListApp.Controllers
 {
     [Authorize]
     [Route("api/user-tasks")]
     [ApiController]
-    public class UsersTasksController : ControllerBase
+    public class UsersTasksController : BaseApiController
     {
         private readonly ITaskService _taskService;
         private readonly UserAccessManager _userAccessManager;
@@ -26,7 +25,7 @@ namespace ToDoListApp.Controllers
 
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<ActionResult<IEnumerable<TasksResponseModel>>> GetAllTasks()
+        public async Task<ActionResult<IEnumerable<TasksResponseModel>>> GetAllTasksUser()
         {
             var userId = _userAccessManager.GetUserId();
 
@@ -38,7 +37,7 @@ namespace ToDoListApp.Controllers
         [HttpGet("{id:Guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<TasksResponseModel>> GetTaskById(Guid id)
+        public async Task<ActionResult<TasksResponseModel>> GetUserTaskById(Guid id)
         {
             try
             {
@@ -55,19 +54,20 @@ namespace ToDoListApp.Controllers
             }
             catch (TaskNotFoundException)
             {
-                return NotFound(ApiResult.NotFound("Task not found"));
+                return NotFound("Task not found");
             }
         }
 
         [HttpPut("{id:Guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<TasksResponseModel>> PutUserTask(Guid id, [FromBody] UserTaskRequestModel request)
+        public async Task<ActionResult<TasksResponseModel>> UpdateUserTask(Guid id, [FromBody] UserTaskRequestModel request)
         {          
             try
             {
                 var taskDto = await _taskService.Update(new UpdateTaskModel
                 {
+                    Id = id,
                     StatusTask = request.StatusTask,
                     AcceptanceDate = request.AcceptanceDate
                 });
@@ -85,7 +85,7 @@ namespace ToDoListApp.Controllers
             }
             catch (TaskNotFoundException)
             {
-                return NotFound(ApiResult.NotFound("Task not found"));
+                return NotFound("Task not found");
             }
         }      
     }

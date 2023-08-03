@@ -1,29 +1,23 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using ToDoListApp.BLL.Exceptions;
-using ToDoListApp.BLL.Models.Dto;
-using ToDoListApp.BLL.Services;
 using ToDoListApp.BLL.Services.Interfaces;
 using ToDoListApp.Contracts.Requests;
 using ToDoListApp.Contracts.Responses;
 using ToDoListApp.Contracts.Responses.Base;
-using ToDoListApp.DAL.Entity.Identity;
 using ToDoListApp.Enums;
 
 namespace ToDoListApp.Controllers
 {
     [Route("api/token")]
     [ApiController]
-    public class RefreshTokensController : ControllerBase
+    public class RefreshTokensController : BaseApiController
     {
         private readonly IAuthService _authService;
-        private readonly UserManager<User> _userManager;
 
-        public RefreshTokensController(IAuthService authService, UserManager<User> userManager)
+        public RefreshTokensController(IAuthService authService)
         {
             _authService = authService;
-            _userManager = userManager;
         }
 
         [HttpPost]
@@ -34,22 +28,22 @@ namespace ToDoListApp.Controllers
         {
             if (model is null)
             {
-                return BadRequest(ApiResult.BadRequest("Invalid client request"));
+                return BadRequest("Invalid client request");
             }
 
             try
             {
                 var result = await _authService.GetRefreshToken(model);
 
-                return Ok(ApiResult<TokenResponseModel>.Succces(result));
+                return Ok(result);
             }
             catch (AccessTokenInvalidException)
             {
-                return BadRequest(ApiResult.BadRequest("Invalid access token or refresh token"));
+                return BadRequest("Invalid access token or refresh token");
             }
             catch(InvalidPasswordException)
             {
-                return BadRequest(ApiResult.BadRequest("Invalid password"));
+                return BadRequest("Invalid password");
             }
         }
 
@@ -64,11 +58,11 @@ namespace ToDoListApp.Controllers
             {
                 await _authService.DeleteToken(username);
 
-                return Ok(ApiResult.Succces());
+                return Ok();
             }
             catch (InvalidUserNameException)
             {
-                return BadRequest(ApiResult.BadRequest("Invalid user name"));
+                return BadRequest("Invalid user name");
             }
         }
 
@@ -80,7 +74,7 @@ namespace ToDoListApp.Controllers
         {
             await _authService.DeleteTokenAll();
 
-            return Ok(ApiResult.Succces());
+            return Ok();
         }
     }
 }
