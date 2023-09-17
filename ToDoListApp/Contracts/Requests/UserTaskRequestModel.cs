@@ -1,5 +1,4 @@
-﻿
-namespace ToDoListApp.Contracts.Requests
+﻿namespace ToDoListApp.Contracts.Requests
 {
     public class UserTaskRequestModel
     {

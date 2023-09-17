@@ -4,6 +4,7 @@ using System.Data;
 using ToDoListApp.BLL.Exceptions;
 using ToDoListApp.BLL.Models;
 using ToDoListApp.BLL.Models.Dto;
+using ToDoListApp.BLL.Services;
 using ToDoListApp.BLL.Services.Interfaces;
 using ToDoListApp.Contracts.Requests;
 using ToDoListApp.Contracts.Responses;
@@ -15,12 +16,13 @@ namespace ToDoListApp.Controllers
     [Authorize(Roles = nameof(Roles.Admin))]
     [Route("api/admin")]
     [ApiController]
-    public class AdminController : ControllerBase
+    public class AdminController : BaseApiController
     {
         private readonly IUserService _userService;
         private readonly ITaskService _taskService;
 
-        public AdminController(IUserService userService, ITaskService taskService)
+        public AdminController(IUserService userService, ITaskService taskService) 
+  
         {
             _userService = userService;
             _taskService = taskService;
@@ -32,25 +34,25 @@ namespace ToDoListApp.Controllers
         public async Task<ActionResult<ApiResult>> AddRoles(Guid id, Roles roles)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ApiResult.BadRequest("Failed"));
+                return BadRequest("Failed");
 
             try
             {
                 await _userService.AddRoleToUser(id, roles);
 
-                return Ok(ApiResult.Succces());
+                return Ok();
             }
             catch (UserNotFoundException)
             {
-                return BadRequest(ApiResult.BadRequest("User not found"));
+                return BadRequest("User not found");
             }
             catch(RoleNotExistException)
             {
-                return BadRequest(ApiResult.BadRequest("Role does not exist"));
+                return BadRequest("Role does not exist");
             }
             catch (RoleNotAddedToUserException ex)
             {
-                return BadRequest(ApiResult.BadRequest(ex.Message));
+                return BadRequest(ex.Message);
             }
         }
 
@@ -91,7 +93,7 @@ namespace ToDoListApp.Controllers
             }
             catch (TaskNotFoundException)
             {
-                return NotFound(ApiResult.NotFound("Task not found"));
+                return NotFound("Task not found");
             }         
         }
 
@@ -123,7 +125,7 @@ namespace ToDoListApp.Controllers
             }
             catch (TaskNotFoundException)
             {
-                return NotFound(ApiResult.NotFound("Task not found"));
+                return NotFound("Task not found");
             }
         }
 
@@ -159,11 +161,11 @@ namespace ToDoListApp.Controllers
             {
                 await _taskService.DeleteById(id);
 
-                return Ok(ApiResult.Succces());
+                return Ok();
             }
             catch (TaskNotFoundException)
             {
-                return NotFound(ApiResult.NotFound("Task not found"));
+                return NotFound("Task not found");
             }
         }
     }

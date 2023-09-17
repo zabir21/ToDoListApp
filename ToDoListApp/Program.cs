@@ -10,6 +10,12 @@ using ToDoList.DAL.DbContext;
 using Newtonsoft.Json.Converters;
 using ToDoListApp.BLL.Services.Interfaces;
 using ToDoListApp.DAL;
+using ToDoListApp.Validators;
+using FluentValidation;
+using FluentValidation.AspNetCore;
+using Microsoft.AspNetCore.Mvc;
+using ToDoListApp.Contracts.Responses.Base;
+using ToDoListApp.Enums;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,8 +25,10 @@ builder.Services.AddTransient<IUserService, UserService>();
 builder.Services.AddTransient<ITaskService, TaskService>();
 builder.Services.AddTransient<DataSeeder>();
 builder.Services.AddScoped<UserAccessManager>();
+//builder.Services.AddScoped<IValidator<RegistrationRequestModel>, RegistrationRequestModelValidator>();
 
 builder.Services.AddControllers();
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(opt =>
@@ -87,10 +95,29 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddControllers()
-    .AddNewtonsoftJson(options =>
+.AddNewtonsoftJson(options =>
+{
+    options.SerializerSettings.Converters.Add(new StringEnumConverter());
+});
+builder.Services.AddFluentValidationAutoValidation();
+//builder.Services.AddFluentValidationClientsideAdapters();
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddValidatorsFromAssemblyContaining<AdminTaskRequestModelValidator>();
+
+builder.Services.Configure<ApiBehaviorOptions>(config =>
+{
+    config.InvalidModelStateResponseFactory = context =>
     {
-        options.SerializerSettings.Converters.Add(new StringEnumConverter());
-    });
+        var problemDetails = new ValidationProblemDetails(context.ModelState);
+        var result = ApiResult.BadRequest("Request validation error", ErrorCode.ValidationError,
+            problemDetails.Errors.ToDictionary(x => x.Key, v => v.Value));
+
+        return new BadRequestObjectResult(result)
+        {
+            ContentTypes = { "application/json", "application/xml" }
+        };
+    };
+});
 
 
 var app = builder.Build();
@@ -99,6 +126,11 @@ AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 ////////////////////////////
 var scopeFactory = app.Services.GetRequiredService<IServiceScopeFactory>();
 await using var scope = scopeFactory.CreateAsyncScope();
+
+var cntx = scope.ServiceProvider.GetRequiredService<UsersDbContext>();
+
+await cntx.Database.EnsureCreatedAsync();
+
 var seedManager = scope.ServiceProvider.GetRequiredService<DataSeeder>();
 
 await seedManager.SeedDataAsync();
@@ -120,3 +152,4 @@ app.MapControllers();
 
 app.Run();
 
+public partial class Program { }

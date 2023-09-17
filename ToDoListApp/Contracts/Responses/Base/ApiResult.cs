@@ -8,7 +8,7 @@ namespace ToDoListApp.Contracts.Responses.Base
 
         public ApiResult() { }
 
-        public ApiResult(T data, ResultStatus status, string message, Dictionary<string, string> errors)
+        public ApiResult(T data, ResultStatus status, string message, Dictionary<string, string[]> errors)
         {
             Data = data;
             Errors = errors;
@@ -25,7 +25,7 @@ namespace ToDoListApp.Contracts.Responses.Base
             };
         }
 
-        public static ApiResult<T> BadRequest(T data, string message, Dictionary<string, string> errors)
+        public static ApiResult<T> BadRequest(T data, string message, Dictionary<string, string[]> errors)
         {
             return new ApiResult<T>
             {
@@ -36,7 +36,7 @@ namespace ToDoListApp.Contracts.Responses.Base
             };
         }
 
-        public static ApiResult<T> NotFound(string message, Dictionary<string, string> errors)
+        public static ApiResult<T> NotFound(string message, Dictionary<string, string[]> errors)
         {
             return new ApiResult<T>
             {
@@ -63,7 +63,7 @@ namespace ToDoListApp.Contracts.Responses.Base
             };
         }
 
-        public static ApiResult<T> NotFound(Dictionary<string, string> errors)
+        public static ApiResult<T> NotFound(Dictionary<string, string[]> errors)
         {
             return new ApiResult<T>
             {
@@ -77,9 +77,11 @@ namespace ToDoListApp.Contracts.Responses.Base
     {
         public string Message { get; set; }
 
-        public Dictionary<string, string> Errors { get; set; }
+        public Dictionary<string, string[]> Errors { get; set; }
 
         public ResultStatus Status { get; set; }
+
+        public ErrorCode? ErrorCode { get; set; }
 
         public static ApiResult Succces()
         {
@@ -89,13 +91,34 @@ namespace ToDoListApp.Contracts.Responses.Base
             };
         }
 
-        public static ApiResult BadRequest(string message, Dictionary<string, string> errors)
+        public static ApiResult BadRequest(string message, ErrorCode errorCode, Dictionary<string, string[]> errors)
+        {
+            return new ApiResult
+            {
+                Status = ResultStatus.Failed,
+                Message = message,
+                Errors = errors,
+                ErrorCode = errorCode
+            };
+        }
+
+        public static ApiResult BadRequest(string message, Dictionary<string, string[]> errors)
         {
             return new ApiResult
             {
                 Status = ResultStatus.Failed,
                 Message = message,
                 Errors = errors
+            };
+        }
+
+        public static ApiResult BadRequest(string message, ErrorCode errorCode)
+        {
+            return new ApiResult
+            {
+                Status = ResultStatus.Failed,
+                Message = message,
+                ErrorCode = errorCode
             };
         }
 
@@ -108,7 +131,16 @@ namespace ToDoListApp.Contracts.Responses.Base
             };
         }
 
-        public static ApiResult NotFound(string message, Dictionary<string, string> errors)
+        public static ApiResult BadRequest(ErrorCode errorCode)
+        {
+            return new ApiResult
+            {
+                Status = ResultStatus.Failed,
+                ErrorCode = errorCode
+            };
+        }
+
+        public static ApiResult NotFound(string message, Dictionary<string, string[]> errors)
         {
             return new ApiResult
             {
@@ -127,6 +159,26 @@ namespace ToDoListApp.Contracts.Responses.Base
             };
         }
 
+        public static ApiResult NotFound(string message, ErrorCode errorCode)
+        {
+            return new ApiResult
+            {
+                Status = ResultStatus.NotFound,
+                Message = message,
+                ErrorCode = errorCode
+            };
+        }
+
+        public static ApiResult NotFound(ErrorCode errorCode)
+        {
+            return new ApiResult
+            {
+                Status = ResultStatus.NotFound,
+                ErrorCode = errorCode
+            };
+        }
+
+
         public static ApiResult NotFound()
         {
             return new ApiResult
@@ -135,7 +187,7 @@ namespace ToDoListApp.Contracts.Responses.Base
             };
         }
 
-        public static ApiResult NotFound(Dictionary<string, string> errors)
+        public static ApiResult NotFound(Dictionary<string, string[]> errors)
         {
             return new ApiResult
             {
